@@ -2,13 +2,21 @@
 pragma solidity ^0.8.30;
 
 import {Test} from "forge-std/Test.sol";
+import {GovernanceToken} from "../src/GovernanceToken.sol";
 import {Treasury} from "../src/Treasury.sol";
+import {Governor} from "../src/Governor.sol";
 
 contract TreasuryTest is Test {
+    GovernanceToken public governanceToken;
     Treasury treasury;
+    Governor governor;
 
     function setUp() public {
-        treasury = new Treasury();
+        governanceToken = new GovernanceToken(address(this), address(this));
+        governor = new Governor(address(governanceToken));
+        treasury = new Treasury(address(governor));
+
+        governanceToken.grantRole(governanceToken.GOVERNOR_ROLE(), address(governor));
     }
 
     function testDeposit() public {

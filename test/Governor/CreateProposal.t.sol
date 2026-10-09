@@ -6,14 +6,17 @@ import {Governor} from "../../src/Governor.sol";
 import {GovernanceToken} from "../../src/GovernanceToken.sol";
 
 contract CreateProposalTest is Test {
-    Governor public governor;
     GovernanceToken public governanceToken;
+    Governor public governor;
 
     address public nonTokenHolder = address(0x1);
     address public nonGovernor = address(0x2);
 
     function setUp() public {
-        governanceToken = new GovernanceToken(address(this), address(this), address(this));
+        governanceToken = new GovernanceToken(address(this), address(this));
+        governor = new Governor(address(governanceToken));
+
+        governanceToken.grantRole(governanceToken.GOVERNOR_ROLE(), address(governor));
     }
 
     function testCreateProposal() public {
@@ -38,8 +41,8 @@ contract CreateProposalTest is Test {
     }
 
     function testCreateProposalUnauthorized() public {
-        // Try to create a proposal without TOKEN_HOLDER_ROLE
-        vm.startPrank(nonGovernor);
+        // Try to create a proposal without meeting the minimum token requirement
+        vm.startPrank(nonTokenHolder);
         vm.expectRevert(Governor.Unauthorized.selector);
         governor.createProposal(address(0), 0, "Test Proposal", "");
         vm.stopPrank();
