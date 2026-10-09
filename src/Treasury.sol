@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {GovernanceToken} from "./GovernanceToken.sol";
-
 contract Treasury {
     // -- CUSTOM ERRORS --
     // custom error for authorization
@@ -34,6 +32,7 @@ contract Treasury {
         emit Deposit(msg.sender, msg.value, block.timestamp);
     }
 
+    // function withdraw that only the governor can call
     function withdraw(address payable recipient, uint256 amount) external {
         if (msg.sender != governor) {
             revert Unauthorized();

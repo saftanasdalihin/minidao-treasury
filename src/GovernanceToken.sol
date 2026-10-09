@@ -12,24 +12,13 @@ contract GovernanceToken is ERC20, ERC20Pausable, AccessControl, ERC20Permit {
     error noMeetMinimumTokens();
 
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
-    bytes32 public constant TOKEN_HOLDER_ROLE = keccak256("TOKEN_HOLDER_ROLE");
     bytes32 public constant GOVERNOR_ROLE = keccak256("GOVERNOR_ROLE");
 
-    constructor(address recipient, address pauser, address governor)
-        ERC20("GovernanceToken", "GTK")
-        ERC20Permit("GovernanceToken")
-    {
+    constructor(address recipient, address pauser) ERC20("GovernanceToken", "GTK") ERC20Permit("GovernanceToken") {
         _mint(recipient, 1000000 * 10 ** decimals());
-        _grantRole(PAUSER_ROLE, pauser);
-        _grantRole(TOKEN_HOLDER_ROLE, recipient);
-        _grantRole(GOVERNOR_ROLE, governor);
-    }
 
-    function grantTokenHolderRole() public {
-        if (balanceOf(msg.sender) < 1000 * 10 ** decimals()) {
-            revert noMeetMinimumTokens();
-        }
-        _grantRole(TOKEN_HOLDER_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(PAUSER_ROLE, pauser);
     }
 
     function mint(address to, uint256 amount) public onlyRole(GOVERNOR_ROLE) {

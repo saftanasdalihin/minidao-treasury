@@ -15,6 +15,12 @@ contract Governor {
     // -- STATE VARIABLES --
     GovernanceToken public governanceToken;
     uint256 public proposalCount;
+    uint256 public constant MINIMUM_TOKENS_TOKEN_HOLDER = 1000 * 10 ** 18; // Minimum tokens required to be a token holder
+
+    // -- CONSTRUCTOR --
+    constructor(address _governanceToken) {
+        governanceToken = GovernanceToken(_governanceToken);
+    }
 
     // -- MAPPINGS --
     mapping(uint256 => Proposal) public proposals;
@@ -26,6 +32,7 @@ contract Governor {
     error ProposalAlreadyExecuted();
     error AlreadyVoted();
     error ProposalFailedtoExecute();
+    error QuorumNotReached();
 
     // -- EVENTS --
     event ProposalCreated(
@@ -33,12 +40,12 @@ contract Governor {
     );
     event ProposalExecuted(uint256 indexed proposalId);
 
-    // function to create a proposal that only governors can call
+    // function to create a proposal that only token holders can call
     function createProposal(address _target, uint256 _value, string memory _description, bytes memory _data)
         public
         returns (uint256)
     {
-        if (!governanceToken.hasRole(governanceToken.TOKEN_HOLDER_ROLE(), msg.sender)) {
+        if (governanceToken.balanceOf(msg.sender) <= MINIMUM_TOKENS_TOKEN_HOLDER) {
             revert Unauthorized();
         }
         // logic to create a proposal
@@ -54,7 +61,7 @@ contract Governor {
 
     // function to vote on a proposal that only token holders can call
     function voteOnProposal(uint256 _proposalId, bool _support) public {
-        if (!governanceToken.hasRole(governanceToken.TOKEN_HOLDER_ROLE(), msg.sender)) {
+        if (governanceToken.balanceOf(msg.sender) < MINIMUM_TOKENS_TOKEN_HOLDER) {
             revert Unauthorized();
         }
         // logic to vote on a proposal
@@ -76,9 +83,9 @@ contract Governor {
         hasVoted[_proposalId][msg.sender] = true; // Mark the voter as having voted
     }
 
-    // function to execute a proposal that only governance role can call
+    // function to execute a proposal that only token holders can call
     function executeProposal(uint256 _proposalId) public {
-        if (!governanceToken.hasRole(governanceToken.TOKEN_HOLDER_ROLE(), msg.sender)) {
+        if (governanceToken.balanceOf(msg.sender) <= MINIMUM_TOKENS_TOKEN_HOLDER) {
             revert Unauthorized();
         }
         if (_proposalId >= proposalCount) {
@@ -87,8 +94,9 @@ contract Governor {
         if (proposals[_proposalId].executed) {
             revert ProposalAlreadyExecuted();
         }
-        if (proposals[_proposalId].voteCount == 0) {
-            revert ProposalFailedtoExecute();
+        uint256 quorum = governanceToken.totalSupply() / 2; // Quorum is set to 50% of the total supply
+        if (proposals[_proposalId].voteCount < quorum) {
+            revert QuorumNotReached();
         }
         // logic to execute a proposal
         Proposal storage proposal = proposals[_proposalId];
